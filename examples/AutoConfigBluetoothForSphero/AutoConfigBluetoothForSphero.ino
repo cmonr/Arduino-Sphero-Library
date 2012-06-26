@@ -1,3 +1,11 @@
+/************************************************
+ Written by Cruz Monrreal II
+ Created on 06-26-2012
+ 
+ Updates can be found here:
+  https://github.com/cmonr/Arduino-Bluetooth-Library
+************************************************/
+
 #include <SoftwareSerial.h>
 
 SoftwareSerial bluetooth(2,3);

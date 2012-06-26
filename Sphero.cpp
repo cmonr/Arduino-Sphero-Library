@@ -1,9 +1,10 @@
-/*
-Sphero.cpp
-Author: Cruz Monrreal II
-
-https://github.com/cmonr/Arduino-Sphero-Library
-*/
+/************************************************
+ Written by Cruz Monrreal II
+ Created on 06-26-2012
+ 
+ Updates can be found here:
+  https://github.com/cmonr/Arduino-Bluetooth-Library
+************************************************/
 
 // 
 // Includes
