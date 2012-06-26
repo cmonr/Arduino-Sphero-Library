@@ -12,19 +12,15 @@
 SoftwareSerial bluetooth(2,3);
 Sphero sphero(bluetooth);
 
-
 void setup() {
   Serial.begin(115200);
   bluetooth.begin(9600);
-  delay(250);
   
   // Turn on Back LED
   sphero.setBackLED(0xFF);
-  delay(250);
 }
 
 // ♫♫♫ You Spin Me Right Round ♫♫♫
 void loop() {
-  sphero.rotateHeadingBy(45);
-  delay(3);
+  sphero.rotateHeadingBy(90);
 }
