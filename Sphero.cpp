@@ -6,75 +6,93 @@
   https://github.com/cmonr/Arduino-Bluetooth-Library
 ************************************************/
 
-// 
-// Includes
-// 
-
 #include <stdint.h>
 #include <Arduino.h>
 #include "Sphero.h"
 
-//
-// Constructor
-//
 Sphero::Sphero(SoftwareSerial &serial){
     bluetooth = &serial;
 }
 
-//
-// Destructor
-//
 Sphero::~Sphero(){}
 
-
 //uint8_t Sphero::boost(uint16_t heading, uint8_t duration);
-uint8_t Sphero::roll(short heading, char speed){
-    return sendSynchronousPacket(0x02, 0x30, 0x02, 0x05, speed, heading >> 8 , heading, 0xFF);
+void Sphero::roll(short heading, char speed){
+    sendSynchronousPacket(0x02, 0x30, 0x02, 0x05, speed, heading >> 8 , heading, 0xFF);
 }
-//uint8_t Sphero::stop();
-uint8_t Sphero::setRGBColor(char red, char green, char blue){
-    return sendSynchronousPacket(0x02, 0x20, 0x01, 0x05, red, green, blue, 0x00);
+//void Sphero::stop();
+void Sphero::setRGBColor(char red, char green, char blue){
+    sendSynchronousPacket(0x02, 0x20, 0x01, 0x05, red, green, blue, 0xFF);
 }
-uint8_t Sphero::setBackLED(char intensity){
-    return sendSynchronousPacket(0x02, 0x21, 0x04, 0x02, intensity);
+void Sphero::getRGBColor(){
+    sendSynchronousPacket(0x02, 0x22, 0x06, 0x01);
 }
-//uint8_t Sphero::setRotationRate(uint8_t rate);
-uint8_t Sphero::rotateHeadingBy(short heading){
-    return sendSynchronousPacket(0x02, 0x01, 0x03, 0x03, heading >> 8 , heading);
+void Sphero::setBackLED(char intensity){
+    sendSynchronousPacket(0x02, 0x21, 0x04, 0x02, intensity);
 }
-//uint8_t Sphero::setMotionTimeout();
-//uint8_t Sphero::setRawMotorValues(uint8_t l_mode, uint8_t r_mode, uint8_t l_pwr, uint8_t r_pwr);
+//void Sphero::setRotationRate(uint8_t rate);
+void Sphero::rotateHeadingBy(short heading){
+    sendSynchronousPacket(0x02, 0x01, 0x03, 0x03, heading >> 8 , heading);
+}
+//void Sphero::setMotionTimeout();
+//void Sphero::setRawMotorValues(uint8_t l_mode, uint8_t r_mode, uint8_t l_pwr, uint8_t r_pwr);
 
-uint8_t Sphero::sendSynchronousPacket(uint8_t DID, uint8_t CID, uint8_t SEQ, uint8_t DLEN, ...){
-    uint16_t i=0;
-    uint8_t sum=0, tmp;
+void Sphero::sendSynchronousPacket(char DID, char CID, char SEQ, char DLEN, ...){
+    short i=0;
+    char sum=0, data;
     va_list args;
     
-    bluetooth->write(uint8_t(0xFF));
-    bluetooth->write(uint8_t(0xFF));
-    bluetooth->write(uint8_t(DID));
-    bluetooth->write(uint8_t(CID));
-    bluetooth->write(uint8_t(SEQ));
-    bluetooth->write(uint8_t(DLEN));
+    // Write data
+    bluetooth->write(char(0xFF));
+    bluetooth->write(char(0xFF));
+    bluetooth->write(char(DID));
+    bluetooth->write(char(CID));
+    bluetooth->write(char(SEQ));
+    bluetooth->write(char(DLEN));
     
+    // Calculate checksum
     sum += DID + CID + SEQ + DLEN;
     
     va_start(args, DLEN);
     for(; i<DLEN-1; i++){
-        tmp = va_arg(args, int);
-        bluetooth->write(uint8_t(tmp));
-        sum += tmp;
+        data = va_arg(args, int);
+        bluetooth->write(char(data));
+        sum += data;
     }
     va_end(args);
-    //delay(1);
-    bluetooth->write(uint8_t(~sum));
-    //bluetooth->print('\n');
     
-    return readResponsePacket();
+    // Write Checksum
+    bluetooth->write(char(~sum));
+    
+    // Wait for response
+    readResponsePacket();
 }
 
-uint8_t Sphero::readResponsePacket(){
-    //while(bluetooth->available());
+void Sphero::readResponsePacket(){
+    char ctr = 0;
+    response = "";
     
-    return 0;
+    bluetooth->flush(); // Get rid of any stale data
+    
+    while(!bluetooth->available()){}        // Wait for response packet to begin
+    
+    response += char(bluetooth->read());    // Append first character
+    
+    while(ctr < 32  ){    // Arbritrary value
+        if (bluetooth->available()){
+            response += char(bluetooth->read());
+            ctr = 0;
+        }else{
+            ctr++;
+        }
+    }
 }
+
+String Sphero::readRawResponse(){ return response; }
+
+String Sphero::readResponseData(){
+    if (response.charAt(4) > 1)
+        return response.substring(5, 5 + (response.charAt(4)-1));
+    return "";
+}
+  
