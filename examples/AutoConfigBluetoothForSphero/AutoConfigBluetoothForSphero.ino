@@ -3,7 +3,7 @@
  Created on 06-26-2012
  
  Updates can be found here:
-  https://github.com/cmonr/Arduino-Bluetooth-Library
+  https://github.com/cmonr/Arduino-Sphero-Library
 ************************************************/
 
 #include <SoftwareSerial.h>
