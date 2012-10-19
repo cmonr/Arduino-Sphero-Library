@@ -10,15 +10,18 @@
 #define Sphero_h
 
 #include <stdint.h>
-//#include <SoftwareSerial.h>
 #include <Arduino.h>
 #include <Serial.h>
+
+#define SPHERO_IMU_YAW      0x00010000
+#define SPHERO_IMU_ROLL     0x00020000
+#define SPHERO_IMU_PITCH    0x00040000
 
 class Sphero{
 
 public:
   // public methods
-  Sphero(/* SoftwareSerial &serial */);
+  Sphero();
   ~Sphero();
   
   // Set
@@ -27,7 +30,7 @@ public:
   //void stop();
   char setRGBColor( char red,  char green,  char blue );
   char getRGBColor( void );
-  char setBackLED( char intensity);
+  char setBackLED( char intensity );
   //void setRotationRate(uint8_t rate);
   char rotateHeadingBy( short heading );
   char getOptionFlags( void );
@@ -36,20 +39,30 @@ public:
   
   // Get
   //void getHeading(uint16_t* data);
-  char setStreamingData( short sample_freq_divisor, short frames_per_packet, long mask );
+  char setStreamingData( short sample_freq_divisor, short frames_per_packet, long int mask );
   char setStabilization( char enable );
   
-  String readResponse( void );
-  String readAsyncPacket( void );
-  
+  // Packet attributes
   char getMRSP( void );
+  char getSequenceNum( void );
+  char getID( void );
+  char getChecksum( void );
+  short getDataLength( void );
+  //char[] getDataPointer( void );
+  char getData( char num );
+  
+  void readAsyncPacket( void );
+  
 private:
-  char sendSynchronousPacket( char DID, char CID, char SEQ, char DLEN, ... );
-  char readResponsePacket( void );
+  char sendCommand( char DID, char CID, char SEQ, char DLEN, ... );
+  char readSimplePacket( void );
   
   //Serial *bluetooth;
-  String response;
   char mrsp;
+  char seq;
+  short len;
+  char data[32];
+  char chksum;
 };
 
 #endif

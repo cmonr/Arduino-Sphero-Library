@@ -8,50 +8,49 @@
 
 #include <stdint.h>
 #include <Arduino.h>
-#include "Sphero.h"
+#include <Sphero.h>
 
 Sphero::Sphero(){
     //bluetooth = &serial;
     Serial1.begin(9600);
-    mrsp = 0x00;
 }
 
 Sphero::~Sphero(){}
 
 //uint8_t Sphero::boost(uint16_t heading, uint8_t duration);
 char Sphero::roll(short heading, char speed){
-    return sendSynchronousPacket(0x02, 0x30, 0x02, 0x05, speed, heading >> 8 , heading, 0xFF);
+    return sendCommand(0x02, 0x30, 0x02, 0x05, speed, heading >> 8 , heading, 0xFF);
 }
 //void Sphero::stop();
 char Sphero::setRGBColor(char red, char green, char blue){
-    return sendSynchronousPacket(0x02, 0x20, 0x01, 0x05, red, green, blue, 0xFF);
+    return sendCommand(0x02, 0x20, 0x01, 0x05, red, green, blue, 0xFF);
 }
 char Sphero::getRGBColor(){
-    return sendSynchronousPacket(0x02, 0x22, 0x06, 0x01);
+    return sendCommand(0x02, 0x22, 0x06, 0x01);
 }
 char Sphero::setBackLED(char intensity){
-    return sendSynchronousPacket(0x02, 0x21, 0x04, 0x02, intensity);
+    return sendCommand(0x02, 0x21, 0x04, 0x02, intensity);
 }
 //void Sphero::setRotationRate(uint8_t rate);
 char Sphero::rotateHeadingBy(short heading){
-    return sendSynchronousPacket(0x02, 0x01, 0x03, 0x03, heading >> 8 , heading);
+    return sendCommand(0x02, 0x01, 0x03, 0x03, heading >> 8 , heading);
 }
 //void Sphero::setMotionTimeout();
 //void Sphero::setRawMotorValues(uint8_t l_mode, uint8_t r_mode, uint8_t l_pwr, uint8_t r_pwr);
 
 char Sphero::setStabilization(char enable){
-    return sendSynchronousPacket(0x02, 0x02, 0x09, 0x02, enable==1);
+    return sendCommand(0x02, 0x02, 0x09, 0x02, enable==1);
 }
     
 char Sphero::setStreamingData(short sample_freq_divisor, short frames_per_packet, long int mask){
-    return sendSynchronousPacket(0x02, 0x11, 0x07, 0x0A, (400/sample_freq_divisor) >> 8, (400/sample_freq_divisor), frames_per_packet >> 8, frames_per_packet, char(mask >> 24), char(mask >> 16), char(mask >> 8), char(mask), 5);
+    return sendCommand(0x02, 0x11, 0x07, 0x0A, (400/sample_freq_divisor) >> 8, (400/sample_freq_divisor), frames_per_packet >> 8, frames_per_packet, char(mask >> 24), char(mask >> 16), char(mask >> 8), char(mask), 100);
 }
 
 char Sphero::getOptionFlags(){
-    return sendSynchronousPacket(0x02, 0x36, 0x08, 0x01);
+    return sendCommand(0x02, 0x36, 0x08, 0x01);
 }
 
-char Sphero::sendSynchronousPacket(char DID, char CID, char SEQ, char DLEN, ...){
+char Sphero::sendCommand(char DID, char CID, char SEQ, char DLEN, ...){
     short i=0;
     char sum=0, data;
     va_list args;
@@ -75,107 +74,104 @@ char Sphero::sendSynchronousPacket(char DID, char CID, char SEQ, char DLEN, ...)
         data = va_arg(args, int);
         Serial1.write(data);
         
-        Serial.print(String(data, HEX));
-        Serial.print(" ");
         sum += data;
     }
     va_end(args);
-    Serial.println();
     
     // Write Checksum
     Serial1.write(char(~sum));
     
     // Wait for Simple Response
-    return readResponsePacket();
+    //return readSimplePacket();
+    return 0x00;
 }
 
-char Sphero::readResponsePacket(){
-    int i, len;
-    response = "";
-    
-    Serial1.flush(); // Get rid of any stale data
-    
-    Serial.println("Waiting for Simple Response");
-    while(Serial1.available() < 5);
-    
-    Serial1.read();         // 0xFF
-    Serial1.read();         // 0xFF
-    Serial.print(" MRSP: ");
-    mrsp = Serial1.read();  // MRSP
-    Serial.print(String(mrsp, HEX));
-    Serial.println();
-    Serial.print(" SEQ: ");
-    Serial.println(Serial1.read());     // SEQ
-    Serial.print(" DLEN: ");
-    len = Serial1.read();   // DLEN
-    Serial.println(len, HEX);
-    
-    Serial.println(" Data:");
-    Serial.print("  ");
-    for(i=0; i<len-1; i++){
-        char data; 
-        while(!Serial1.available());
-        
-        data = char(Serial1.read());
-        Serial.print(String(data, HEX));
-        Serial.print(" ");
-        response+=data;
-    }    
-    Serial.println();
-    
-    Serial.print(" Checksum: ");
-    while(!Serial1.available());
-    Serial.println(Serial1.read());     // CHK
-    
-    Serial1.flush();
-    
-    delay(10);
-    
-    return mrsp;
-}
+// Packet attribute functions
 
 char Sphero::getMRSP(){
     return mrsp;
 }
+char Sphero::getSequenceNum(){
+    return seq;
+}
+char Sphero::getID(){
+    return seq;
+}
+char Sphero::getChecksum(){
+    return chksum;
+}
+short Sphero::getDataLength(){
+    return len;
+}
+//char[] Sphero::getDataPointer(){
+//    return &data;
+//}
+char Sphero::getData(char num){
+    return data[num];
+}
 
-String Sphero::readAsyncPacket(){
-    int i, len;
-    response = "";
+
+char Sphero::readSimplePacket(){
+    int i;
     
-    Serial.println("Waiting for Async Packet");
+    // Wait for new data
+    while(Serial1.available() < 5);
+    
+    Serial1.read();         // 0xFF
+    Serial1.read();         // 0xFF
+    mrsp = Serial1.read();  // MRSP
+    seq = Serial1.read();   // SEQ
+    len = Serial1.read();   // DLEN
+    
+    if (len > 32)   // Error
+        return -1;
+    
+    for(i=0; i<len-1; i++){
+        // Wait for new data
+        while(!Serial1.available())
+            delay(1);
+        
+        // Add data to fifo
+        data[i] = char(Serial1.read());
+    }
+    
+    // Wait for new data
+    while(!Serial1.available()); 
+    chksum = Serial1.read();     // CHK
+    
+    delay(10);
+    
+    return mrsp;
+}
+
+void Sphero::readAsyncPacket(){
+    int i;
+    
+    // Wait for new data
     while(Serial1.available() < 5);
     
     Serial1.read();         // 0xFF
     Serial1.read();         // 0xFE
-    Serial.print(" ID Code: ");
-    Serial.println(Serial1.read());         // ID Code
-    Serial.print(" DLEN: ");
+    seq = Serial1.read();   // ID Code
     len = Serial1.read() << 8;  // DLEN-MSB
-    len += Serial1.read();      // DLEN-LSB
-    Serial.println(len);
+    len |= Serial1.read();      // DLEN-LSB
     
-    Serial.println(" Data:");
+    if (len > 32)   // Error
+        return;
+    
     for(i=0; i<len-1; i++){
-        char data; 
-        while(!Serial1.available());
+        // Wait for new data
+        while(!Serial1.available())
+            delay(1);
         
-        data = char(Serial1.read());
-        Serial.print(String(data, HEX));
-        Serial.print(" ");
-        response+=data;
-    }    
-    Serial.println();
+        // Add data to fifo
+        data[i] = char(Serial1.read());
+    }
     
-    Serial.print(" Checksum: ");
-    while(!Serial1.available());
-    Serial.println(Serial1.read());     // CHK
-    
-    Serial1.flush();
+    // Wait for new data
+    while(!Serial1.available()); 
+    chksum = Serial1.read();     // CHK
     
     delay(10);
-    
-    return response;
 }
-
-String Sphero::readResponse(){ return response; }
   
