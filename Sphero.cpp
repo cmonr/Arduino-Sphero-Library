@@ -11,8 +11,9 @@
 #include <Sphero.h>
 
 Sphero::Sphero(){
-    //bluetooth = &serial;
-    Serial1.begin(9600);
+    Serial1.begin(115200);
+    
+    streamingParams.numOfPackets = 16;
 }
 
 Sphero::~Sphero(){}
@@ -21,12 +22,14 @@ Sphero::~Sphero(){}
 char Sphero::roll(short heading, char speed){
     return sendCommand(0x02, 0x30, 0x02, 0x05, speed, heading >> 8 , heading, 0xFF);
 }
-//void Sphero::stop();
+ char Sphero::setHeading(short heading){
+    return sendCommand(0x02, 0x01, 0x0D, 0x03, heading >> 8, heading);
+ }
 char Sphero::setRGBColor(char red, char green, char blue){
     return sendCommand(0x02, 0x20, 0x01, 0x05, red, green, blue, 0xFF);
 }
 char Sphero::getRGBColor(){
-    return sendCommand(0x02, 0x22, 0x06, 0x01);
+    return sendCommand(0x02, 0x22, 0x06, 0x00);
 }
 char Sphero::setBackLED(char intensity){
     return sendCommand(0x02, 0x21, 0x04, 0x02, intensity);
@@ -36,14 +39,41 @@ char Sphero::rotateHeadingBy(short heading){
     return sendCommand(0x02, 0x01, 0x03, 0x03, heading >> 8 , heading);
 }
 //void Sphero::setMotionTimeout();
-//void Sphero::setRawMotorValues(uint8_t l_mode, uint8_t r_mode, uint8_t l_pwr, uint8_t r_pwr);
+
+char Sphero::setMotorPowers(signed short p1, signed short p2){
+    char dir1 = 0x01,
+         dir2 = 0x01,
+         m1 = p1,
+         m2 = p2;
+    
+    if (p1 < 0){
+        m1 = p1 * -1;
+        dir1 = 0x02;
+    }
+    
+    if (p2 < 0){
+        m1 = p2 * -1;
+        dir2 = 0x02;
+    }
+
+    return sendCommand(0x02, 0x33, 0x0B, 0x05, dir1, m1, dir2, m2);
+}
+char Sphero::stop(char coast){
+    return sendCommand(0x02, 0x33, 0x0C, 0x05, coast ? 0x03 : 0x00, 0x00, coast ? 0x03 : 0x00, 0x00);
+}
+
 
 char Sphero::setStabilization(char enable){
-    return sendCommand(0x02, 0x02, 0x09, 0x02, enable==1);
+    return sendCommand(0x02, 0x33, 0x0A, 0x05, 0x04, 0x00, 0x04, 0x00)<<4 | sendCommand(0x02, 0x02, 0x09, 0x02, enable ? 0x01 : 0x00);
 }
     
-char Sphero::setStreamingData(short sample_freq_divisor, short frames_per_packet, long int mask){
-    return sendCommand(0x02, 0x11, 0x07, 0x0A, (400/sample_freq_divisor) >> 8, (400/sample_freq_divisor), frames_per_packet >> 8, frames_per_packet, char(mask >> 24), char(mask >> 16), char(mask >> 8), char(mask), 100);
+char Sphero::setStreamingData(short freq, short frames_per_sample, long int mask){
+    streamingParams.count = 0;
+    streamingParams.freq = freq;
+    streamingParams.frames_per_sample = frames_per_sample;
+    streamingParams.mask = mask;
+    
+    return sendCommand(0x02, 0x11, 0x07, 0x0A, (400/freq) >> 8, (400/freq), frames_per_sample >> 8, frames_per_sample, char(mask >> 24), char(mask >> 16), char(mask >> 8), char(mask), streamingParams.numOfPackets);
 }
 
 char Sphero::getOptionFlags(){
@@ -81,9 +111,10 @@ char Sphero::sendCommand(char DID, char CID, char SEQ, char DLEN, ...){
     // Write Checksum
     Serial1.write(char(~sum));
     
+    delay(50);
+    
     // Wait for Simple Response
-    //return readSimplePacket();
-    return 0x00;
+    return readSimplePacket();
 }
 
 // Packet attribute functions
@@ -101,12 +132,9 @@ char Sphero::getChecksum(){
     return chksum;
 }
 short Sphero::getDataLength(){
-    return len;
+    return len-1;
 }
-//char[] Sphero::getDataPointer(){
-//    return &data;
-//}
-char Sphero::getData(char num){
+unsigned char Sphero::getData(char num){
     return data[num];
 }
 
@@ -139,8 +167,6 @@ char Sphero::readSimplePacket(){
     while(!Serial1.available()); 
     chksum = Serial1.read();     // CHK
     
-    delay(10);
-    
     return mrsp;
 }
 
@@ -172,6 +198,12 @@ void Sphero::readAsyncPacket(){
     while(!Serial1.available()); 
     chksum = Serial1.read();     // CHK
     
-    delay(10);
+    // Auto-request more packets
+    if (streamingParams.count++ == streamingParams.numOfPackets - 1){
+        streamingParams.count = 0;
+        
+        // Get more packets
+        setStreamingData(streamingParams.freq, streamingParams.frames_per_sample, streamingParams.mask);
+    }
 }
   

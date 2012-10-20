@@ -28,6 +28,7 @@ public:
   //void boost(uint16_t heading, uint8_t duration);
   char roll( short heading, char speed );
   //void stop();
+  char setHeading( short heading );
   char setRGBColor( char red,  char green,  char blue );
   char getRGBColor( void );
   char setBackLED( char intensity );
@@ -35,10 +36,16 @@ public:
   char rotateHeadingBy( short heading );
   char getOptionFlags( void );
   //void setMotionTimeout();
-  //void setRawMotorValues(uint8_t l_mode, uint8_t r_mode, uint8_t l_pwr, uint8_t r_pwr);	// Special note. See Datasheet.
+  
+  
+  // setRawMotorValues
+  //  *** Disables Stabilization
+  //  *** Will need to be reenabled
+  char setMotorPowers( signed short m1, signed short m2 );
+  char stop( char coast );
+  
   
   // Get
-  //void getHeading(uint16_t* data);
   char setStreamingData( short sample_freq_divisor, short frames_per_packet, long int mask );
   char setStabilization( char enable );
   
@@ -48,8 +55,7 @@ public:
   char getID( void );
   char getChecksum( void );
   short getDataLength( void );
-  //char[] getDataPointer( void );
-  char getData( char num );
+  unsigned char getData( char num );
   
   void readAsyncPacket( void );
   
@@ -57,12 +63,21 @@ private:
   char sendCommand( char DID, char CID, char SEQ, char DLEN, ... );
   char readSimplePacket( void );
   
-  //Serial *bluetooth;
   char mrsp;
   char seq;
   short len;
-  char data[32];
+  unsigned char data[32];
   char chksum;
+  
+  typedef struct {
+    char count;
+    char numOfPackets;
+    
+    short freq;
+    short frames_per_sample;
+    long mask;
+  } StreamingParams;
+  StreamingParams streamingParams;
 };
 
 #endif
