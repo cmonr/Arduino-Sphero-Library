@@ -8,20 +8,27 @@
 ************************************************/
 
 #include <Sphero.h>
+#include <Bluetooth.h>
 
 Sphero sphero;
+Bluetooth bluetooth;
 
 void setup() {
   Serial.begin(115200);
 
+  // Connect to Sphero
+  bluetooth.beginCMD();
+  bluetooth.connect();
+  bluetooth.endCMD();
+  
   // Indicator LED
   sphero.setBackLED(0xFF);
   
   // Lock motors
   sphero.setStabilization(0);
   
-  // Get Pitch @ 10Hz
-  sphero.setStreamingData(10, 1, SPHERO_IMU_PITCH | SPHERO_IMU_ROLL | SPHERO_IMU_YAW);
+  // Get Pitch @ 25Hz
+  sphero.setStreamingData(25, 1, SPHERO_IMU_PITCH | SPHERO_IMU_ROLL | SPHERO_IMU_YAW);
 }
 
 void loop() {  
