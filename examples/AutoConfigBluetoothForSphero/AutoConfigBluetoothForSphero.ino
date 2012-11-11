@@ -78,12 +78,9 @@ void loop(){
     // Save address
     sendCmd("SR," + sphero_id.substring(0, 12));
     
-    // Configure Bluetooth to autoreconnect
-    sendCmd("SM,3");
-    
     // We're done here!
     sendCmd("---");
-    Serial.println("\nConfiguration complete!\nYou're Sphero will now autoconnect upon powerup!\n\nHave fun ^^;");
+    Serial.println("\nConfiguration complete!\nYou're Sphero's address has been saved in the Bluetooth Module\n\nHave fun ^^;");
     
     // Idle...
     while(true);
