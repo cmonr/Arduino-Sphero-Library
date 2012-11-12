@@ -27,11 +27,19 @@ void setup() {
   bluetooth.connect();
   bluetooth.endCMD();
   
-  // Indicator LED
-  sphero.setBackLED(0xFF);
-  
   // Lock motors
   sphero.setStabilization(0);
+  
+  // Give user a chance to align w/ dot
+  for(int i=0; i<10; i++){
+    sphero.setBackLED(0xFF);
+    delay(500);
+    sphero.setBackLED(0x00);
+    delay(500);
+  }
+  
+  // Indicator LED
+  sphero.setBackLED(0xFF);
   
   // Init Heading to 0
   sphero.setHeading(0x00);
@@ -48,14 +56,14 @@ void loop() {
   yaw = sphero.getData(2) << 8 | sphero.getData(3);
   
   if (yaw < -70 && yaw > -140){
-    ST.turn(-50);
-  }else if (yaw > 70 && yaw < 140){
     ST.turn(50);
+  }else if (yaw > 70 && yaw < 140){
+    ST.turn(-50);
   }else if (pitch < -50){
-    ST.drive(-50);
+    ST.drive(-100);
     //ST.turn(0);
   }else if (pitch > 50){
-    ST.drive(50);
+    ST.drive(100);
   }else{
     ST.drive(0);
     ST.turn(0);
