@@ -2,6 +2,9 @@ Arduino-Sphero-Library
 ======================
 
 
+Notice: At this time, I do not plan on updating the Arduino Sphero or Bluetooth libraries. 
+
+
 This is a -basic- Sphero Library for the Arduino.
 
 
@@ -22,8 +25,3 @@ Instructions:
 6. Power cycle Arduino & Bluetooth Module (unplug & replug USB cable)
 : NOTE: Upon power up, the Sphero should autoconnect
 7. Upload and run any of the examples
-
- 
-API:  
-
-* Coming soon. For now, reference Sphero.h for implemented functions and examples (Yes, I need more comments, I know...)
