@@ -1,21 +1,23 @@
 Arduino-Sphero-Library
 ======================
 
+License: https://creativecommons.org/licenses/by/4.0/
 
-Notice: At this time, I do not plan on updating the Arduino Sphero or Bluetooth libraries. 
+
+Notice: At this time, I do not plan on updating the Arduino Sphero or Bluetooth libraries.
 
 
 This is a -basic- Sphero Library for the Arduino.
 
 
-Things needed:  
+Things needed:
 
 * Bluetooth Modem (http://www.sparkfun.com/products/9358)
 * Arduino Mega 2560
 * Jumper Wires
 
 
-Instructions:  
+Instructions:
 
 1. Connect tx,rx pins on Bluetooth Module to TX1, RX1 on Arduino Mega
 2. Connect CTS and RTS to eachother
