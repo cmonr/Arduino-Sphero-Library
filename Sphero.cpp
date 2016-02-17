@@ -52,7 +52,7 @@ char Sphero::setMotorPowers(signed short p1, signed short p2){
     }
     
     if (p2 < 0){
-        m1 = p2 * -1;
+        m2 = p2 * -1;
         dir2 = 0x02;
     }
 
